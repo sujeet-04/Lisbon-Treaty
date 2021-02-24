@@ -1,0 +1,408 @@
+---
+title: "Lisbon Treaty"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+
+#Read the Dataset.
+Lisbon_data <- read.csv("lisbon-treaty-2-data.csv",header = T)
+#snapshot of the dataset.
+Lisbon_data[1:10,1:8]
+#Dimension of the dataset.
+dim(Lisbon_data)
+
+```
+
+The Dataset contains 338 columns and 1002 Rows, where rows contain the data of the individual choices and their age,education,sex etc.As my task is restricted on some factors only so i will not use the whole dataset.I will create a subset of my original dataset where i keep those rows only which is needed for calculation.
+
+```{r}
+
+Lisbon_data2 <- Lisbon_data[,c(1:3,5,6,9,11,128:137,338)]
+head(Lisbon_data2)
+
+```
+
+Next i rename the columns of the dataset to better understanding of what they represent so that i can interpret my solution based on that 
+
+```{r}
+colnames(Lisbon_data2) <- c("Registered_Voter","oct_vote","oct_type","June_vote",
+                            "June_type","EU_Knowledge","Switzerland_Member","Sex",
+                            "Marital","Age_type","Class","Region","Area_type",
+                            "Working_status","Industry_type",
+                            "Working_sector","Education_status","Age")
+
+Lisbon_data2[1:10,1:5]
+
+#Next i group the eu knowledge parameter into 3 section, poor good and average.
+Lisbon_data2$EU_Knowledge[Lisbon_data2$EU_Knowledge >7] <- "Good"
+Lisbon_data2$EU_Knowledge[Lisbon_data2$EU_Knowledge <= 7 & 
+                            Lisbon_data2$EU_Knowledge >= 4] <- "Average"
+Lisbon_data2$EU_Knowledge[Lisbon_data2$EU_Knowledge < 4] <- "Poor"
+
+```
+
+
+```{r}
+#except the age attribute all the variable present in my dataset is categorical so i need to transform it into factors.
+
+Lisbon_data2$Registered_Voter <- as.factor(Lisbon_data2$Registered_Voter)
+Lisbon_data2$oct_vote <- as.factor(Lisbon_data2$oct_vote)
+Lisbon_data2$oct_type <- as.factor(Lisbon_data2$oct_type)
+Lisbon_data2$June_vote <- as.factor(Lisbon_data2$June_vote)
+Lisbon_data2$June_type <- as.factor(Lisbon_data2$June_type)
+Lisbon_data2$EU_Knowledge <- as.factor(Lisbon_data2$EU_Knowledge)
+Lisbon_data2$Switzerland_Member <- as.factor(Lisbon_data2$Switzerland_Member)
+Lisbon_data2$Sex <- as.factor(Lisbon_data2$Sex)
+Lisbon_data2$Marital <- as.factor(Lisbon_data2$Marital)
+Lisbon_data2$Age_type <- as.factor(Lisbon_data2$Age_type)
+Lisbon_data2$Class <- as.factor(Lisbon_data2$Class)
+Lisbon_data2$Region <- as.factor(Lisbon_data2$Region)
+Lisbon_data2$Area_type <- as.factor(Lisbon_data2$Area_type)
+Lisbon_data2$Working_status <- as.factor(Lisbon_data2$Working_status)
+Lisbon_data2$Industry_type <- as.factor(Lisbon_data2$Industry_type)
+Lisbon_data2$Working_sector <- as.factor(Lisbon_data2$Working_sector)
+Lisbon_data2$Education_status <- as.factor(Lisbon_data2$Education_status)
+
+#In my dataset the categories coded with number, it's good for efficency of the model but now my task is to explain and understand the behaviour of each category for that i have to relabel it into their original names.
+
+levels(Lisbon_data2$Registered_Voter) <- c("Yes","No","Unknown")
+
+levels(Lisbon_data2$oct_vote) <- c("Vote","Didn't Vote","Unknown")
+
+levels(Lisbon_data2$oct_type) <- c("Favour","Against","Didn't Vote")
+
+levels(Lisbon_data2$June_vote) <- c("Vote","Didn't Vote","Unknown")
+
+levels(Lisbon_data2$June_type) <- c("Favour","Against","Didn't Vote")
+
+levels(Lisbon_data2$Switzerland_Member) <- c("True","False","Don't Know")
+
+levels(Lisbon_data2$Sex) <- c("Male","Female")
+
+levels(Lisbon_data2$Marital) <- c("Married","Single","Other")
+
+levels(Lisbon_data2$Age_type) <- c("18-21","22-24","25-34","35-49",
+                                              "50-64","65+")
+
+levels(Lisbon_data2$Class) <- c("Administrative","Supervisory","Skilled Manual",
+                                "Unskilled manual","Farmers(>50 acre land)",
+                                "Farmers(<50 acre land)")
+
+levels(Lisbon_data2$Region) <- c("Dublin","Leinster","Munster","Ulster")
+
+levels(Lisbon_data2$Area_type) <- c("Urban","Rural")
+
+levels(Lisbon_data2$Working_status) <- c("Housewife","Self_Employed","Employee",
+                                         "Unemployed(Job Searching)",
+                                         "Unemployed(Not searching jobs)",
+                                         "Student","Retired")
+
+levels(Lisbon_data2$Industry_type) <- c("Unknown","Construction","Computer/IT",
+                                        "Finance","Agriculture","Food Production",
+                                        "Government","Leisure","Manufacturing",
+                                        "Media","Profesionals","Retail",
+                                        "Other Services","Other")
+
+levels(Lisbon_data2$Working_sector) <- c("Unknown","Public","Private")
+
+levels(Lisbon_data2$Education_status) <- c("Primary","Secondary","Third level",
+                                           "School/Colllege")
+
+Lisbon_data2$oct_type[is.na(Lisbon_data2$oct_type)] <- "Didn't Vote"
+summary(Lisbon_data2)
+
+```
+
+Q.2
+
+```{r}
+library(ggplot2)
+library(plotly)
+
+attach(Lisbon_data2)
+
+
+#Bivariate Plot's
+
+ggplot(Lisbon_data2,mapping = aes(oct_vote,fill = oct_type)) + geom_bar() +
+   geom_text(aes(label=..count..),stat="count",position=position_stack(0.5)) + 
+     ggtitle("Distribution of Votes based on the parameters that and individual voted or not")
+
+#To create a pie chart of the above graph i have to build a table and then plot it.
+oct <- as.data.frame(prop.table(table(oct_type)))
+plot_ly(oct, labels = ~oct_type, values = ~Freq, 
+         type = 'pie',textposition = 'outside',textinfo = 'label+percent') %>%
+          layout(title = "Voting percentage by considering those who didn't vote")
+
+#Now let's build a pie chart by considering those individual's only who voted in the referendum.
+oct2 <- Lisbon_data2$oct_type[Lisbon_data2$oct_type != "Didn't Vote"]
+oct3 <- as.data.frame(table(oct2))
+oct3 <- oct3[1:2,]
+oct3
+plot_ly(oct3, labels = ~oct2, values = ~Freq, 
+         type = 'pie',textposition = 'outside',textinfo = 'label+percent') %>%
+          layout(title = "Voting percentage after removing those who didn't vote")
+
+```
+
+Q.3
+
+```{r}
+
+ggplot(Lisbon_data2,mapping = aes(oct_type,Age,fill = oct_type))+geom_boxplot()+
+  geom_boxplot(width=0.8) + stat_summary(geom="text", fun.y=quantile,
+     aes(label=sprintf("%1.1f", ..y..), color=oct_type),
+        position=position_nudge(x=0.5), size=3.5) + 
+           ggtitle("Distribution of Age according to the Vote's Given")
+
+table(oct_type,Age_type)
+
+ggplot(Lisbon_data2,mapping = aes(oct_vote,fill = Age_type))+geom_bar()+ 
+    facet_grid(~Age_type) +
+       geom_text(aes(label=..count..),stat="count",position=position_stack(0.5))+
+          theme(axis.text.x = element_text(angle = 90)) + 
+             ggtitle("Distribution of individual who voted or not based on age group")
+
+ggplot(Lisbon_data2,mapping = aes(oct_type,fill = Age_type)) + geom_bar()+
+   facet_grid(~Age_type) + 
+      geom_text(aes(label=..count..),
+          stat="count",position=position_stack(0.5)) +
+             theme(axis.text.x = element_text(angle = 90)) + 
+                ggtitle("distribution of voting output based on the age group")
+
+ggplot(Lisbon_data2,mapping = aes(oct_type,fill = Age_type)) + geom_bar()+
+   facet_grid(~Age_type) + 
+      geom_text(aes(label=round((..count../sum(..count..))*100,2)),
+         stat="count",position=position_stack(0.5)) + 
+            theme(axis.text.x = element_text(angle = 90)) + 
+               ggtitle("Percentage distribution of voting output based on the age group")
+
+Lisbon_data3 <- Lisbon_data2[Lisbon_data2$oct_type != "Didn't Vote",]
+head(Lisbon_data3)
+
+#next consider those individual only who voted in the referendum.
+ggplot(Lisbon_data3,mapping = aes(oct_type,Age,fill = oct_type))+geom_boxplot()+
+  geom_boxplot(width=0.8) + stat_summary(geom="text", fun.y=quantile,
+      aes(label=sprintf("%1.1f", ..y..), color=oct_type),
+          position=position_nudge(x=0.5), size=3.5) + 
+              ggtitle("Distribution of age of the people who voted in the referendum")
+
+
+ggplot(Lisbon_data3,mapping = aes(oct_type,fill = Age_type)) + geom_bar()+
+    facet_grid(~Age_type) + 
+       geom_text(aes(label=..count..),stat="count",position=position_stack(0.5)) +
+          theme(axis.text.x = element_text(angle = 90)) + 
+              ggtitle("distribution of voting output based on the age group")
+
+ggplot(Lisbon_data3,mapping = aes(oct_type,fill = Age_type)) + geom_bar()+
+  facet_grid(~Age_type) + geom_text(aes(label=round((..count../sum(..count..))*100,2)),
+      stat="count",position=position_stack(0.5)) + 
+         theme(axis.text.x = element_text(angle = 90)) + 
+            ggtitle("Percentage distribution of voting output based on the age group")
+
+#Next i will create a table for the same.
+table(Lisbon_data3$oct_type,Lisbon_data3$Age_type)
+prop.table(table(Lisbon_data3$oct_type,Lisbon_data3$Age_type),1)
+prop.table(table(Lisbon_data3$oct_type,Lisbon_data3$Age_type),2)
+
+```
+
+Q.4
+
+```{r}
+
+ggplot(Lisbon_data2,mapping = aes(oct_vote,fill = Class)) + geom_bar() +
+   facet_grid(~Class) + geom_text(aes(label=..count..),
+       stat="count",position=position_stack(0.5)) +
+          theme(axis.text.x = element_text(angle = 90)) +
+             ggtitle("Distribution of individual who voted or not based on class")
+
+ggplot(Lisbon_data2,mapping = aes(oct_type , fill = Class)) + geom_bar() +
+   facet_grid(~Class) + geom_text(aes(label=..count..)
+      ,stat="count",position=position_stack(0.5))+
+          theme(axis.text.x = element_text(angle = 90)) + 
+             ggtitle("distribution of voting output based on the economic class")
+
+ggplot(Lisbon_data2,mapping = aes(oct_type , fill = Class)) + geom_bar() +
+    facet_grid(~Class) + geom_text(aes(label=round((..count../sum(..count..))*100,2)),
+        stat="count",position=position_stack(0.5)) +
+           theme(axis.text.x = element_text(angle = 90)) + 
+              ggtitle("Percentage distribution of voting output based on the economic class")
+
+table(oct_type,Class)
+prop.table(table(oct_type,Class))
+
+#consider those only who voted in the referendum.
+ggplot(Lisbon_data3,mapping = aes(oct_type , fill = Class)) + geom_bar() +
+      facet_grid(~Class) + geom_text(aes(label=..count..)
+          ,stat="count",position=position_stack(0.5))+
+               theme(axis.text.x = element_text(angle = 90)) + 
+                    ggtitle("distribution of voting output based on the economic class")
+
+ggplot(Lisbon_data3,mapping = aes(oct_type , fill = Class)) + geom_bar() +
+  facet_grid(~Class) + geom_text(aes(label=round((..count../sum(..count..))*100,2)),
+        stat="count",position=position_stack(0.5))+
+            theme(axis.text.x = element_text(angle = 90)) + 
+                 ggtitle("distribution of voting output based on the economic class")
+
+table(Lisbon_data3$oct_type,Lisbon_data3$Class)
+prop.table(table(Lisbon_data3$oct_type,Lisbon_data3$Class))
+
+
+```
+
+Q.5
+
+```{r}
+
+ggplot(Lisbon_data2,mapping = aes(oct_vote,fill = Education_status))+geom_bar()+
+    geom_text(aes(label=..count..),stat="count",position=position_stack(0.5)) + 
+        facet_grid(~Education_status)+
+           theme(axis.text.x = element_text(angle = 90)) + 
+              ggtitle("Distribution of individual who voted or not based on Education status")
+
+ggplot(Lisbon_data2,mapping = aes(oct_type,fill = Education_status))+geom_bar()+
+    geom_text(aes(label=..count..),stat="count",position=position_stack(0.5)) +  
+       facet_grid(~Education_status)+
+          theme(axis.text.x = element_text(angle = 90)) + 
+              ggtitle("distribution of voting output based on Education status")
+
+ggplot(Lisbon_data2,mapping = aes(oct_type,fill = Education_status))+geom_bar()+
+     geom_text(aes(label=round((..count../sum(..count..))*100,2)),
+         stat="count",position=position_stack(0.5)) + facet_grid(~Education_status)+
+             theme(axis.text.x = element_text(angle = 90)) + 
+                ggtitle("Percentage distribution of voting output based on Education status")
+
+attach(Lisbon_data3)
+table(oct_type,Education_status)
+prop.table(table(oct_type,Education_status))
+prop.table(table(oct_type,Education_status),1)
+prop.table(table(oct_type,Education_status),2)
+
+
+ggplot(Lisbon_data3,mapping = aes(oct_type,fill = Education_status))+geom_bar()+
+   geom_text(aes(label=..count..),stat="count",position=position_stack(0.5)) +
+      facet_grid(~Education_status)+
+         theme(axis.text.x = element_text(angle = 90)) + 
+            ggtitle("distribution of voting output based on Education status")
+
+ggplot(Lisbon_data3,mapping = aes(oct_type,fill = Education_status))+geom_bar()+
+   geom_text(aes(label=round((..count../sum(..count..))*100,2)),
+       stat="count",position=position_stack(0.5)) + facet_grid(~Education_status)+
+           theme(axis.text.x = element_text(angle = 90)) + 
+               ggtitle("Percentage distribution of voting output based on Education status")
+
+```
+
+Q.6
+
+```{r}
+ggplot(Lisbon_data2,mapping = aes(oct_vote,fill = EU_Knowledge))+geom_bar()+
+   geom_text(aes(label=..count..),stat="count",position=position_stack(0.5)) + 
+       facet_grid(~EU_Knowledge)+
+           theme(axis.text.x = element_text(angle = 90)) +
+             ggtitle("Distribution of individual who voted or not based EU knowledge")
+
+
+ggplot(Lisbon_data2,mapping = aes(oct_type,fill = EU_Knowledge))+geom_bar()+
+   geom_text(aes(label=..count..),stat="count",position=position_stack(0.5)) + 
+        facet_grid(~EU_Knowledge) +
+            theme(axis.text.x = element_text(angle = 90)) + 
+                ggtitle("distribution of voting output based on EU knowledge of individual")
+  
+
+ggplot(Lisbon_data2 , mapping = aes(oct_type,fill = EU_Knowledge))+geom_bar()+
+   geom_text(aes(label=round((..count../sum(..count..))*100,2)),
+      stat="count",position=position_stack(0.5)) + facet_grid(~EU_Knowledge)+
+        theme(axis.text.x = element_text(angle = 90)) + 
+            ggtitle("Percentage distribution of voting output based on EU knowledge of individual")
+attach(Lisbon_data3)
+table(oct_type,EU_Knowledge)
+prop.table(table(oct_type,EU_Knowledge))
+prop.table(table(oct_type,EU_Knowledge),1)
+prop.table(table(oct_type,EU_Knowledge),2)
+
+ggplot(Lisbon_data3,mapping = aes(oct_type,fill = EU_Knowledge))+geom_bar()+
+    geom_text(aes(label=..count..),stat="count",position=position_stack(0.5)) +
+       facet_grid(~EU_Knowledge)+
+          theme(axis.text.x = element_text(angle = 90)) + 
+             ggtitle("distribution of voting output based on EU Knowledge of individual")
+
+ggplot(Lisbon_data3,mapping = aes(oct_type,fill = EU_Knowledge))+geom_bar()+
+   geom_text(aes(label=round((..count../sum(..count..))*100,2)),
+      stat="count",position=position_stack(0.5)) + facet_grid(~EU_Knowledge)+
+         theme(axis.text.x = element_text(angle = 90)) + 
+            ggtitle("Percentage distribution of voting output based on EU Knowledge of individual")
+
+```
+Q.7
+
+```{r}
+
+#To analyze is the Eu knowledge of individual have related to the questionare that switzerland is a member of Eu i will use chi square test.  
+table(EU_Knowledge,Switzerland_Member)
+# H0 = Eu knowledge of individual is independent of switzerland is a member of Eu.
+# H1 = Eu knowledge of individual is dependent of switzerland is a member of Eu.
+chisq.test(table(EU_Knowledge,Switzerland_Member))
+#p value is 2.2e-16 < 0.05 so i have to reject null hypothesis and accept alternate hypothesis.
+#That means Eu knowledge of individual is dependent of switzerland is a member of Eu, and to analyze the dependancy i will use some plot's. 
+
+table(EU_Knowledge,Switzerland_Member)
+prop.table(table(EU_Knowledge,Switzerland_Member))
+prop.table(table(EU_Knowledge,Switzerland_Member),2)
+prop.table(table(EU_Knowledge,Switzerland_Member),1)
+
+ggplot(Lisbon_data2,mapping = aes(EU_Knowledge,fill = Switzerland_Member))+geom_bar()+
+   geom_text(aes(label=..count..),stat="count",position=position_stack(0.5)) + 
+  facet_grid(~Switzerland_Member)+
+  theme(axis.text.x = element_text(angle = 90)) + 
+  ggtitle("Comparison of EU knowledge of an individual with the output of an questionare that is switzerland is a member of EU or not ")
+
+ggplot(Lisbon_data2,mapping = aes(EU_Knowledge,fill = Switzerland_Member))+geom_bar()+
+   geom_text(aes(label=round((..count../sum(..count..))*100,2)),
+       stat="count",position=position_stack(0.5)) + facet_grid(~Switzerland_Member)+
+           theme(axis.text.x = element_text(angle = 90)) + 
+              ggtitle("Comparison in percentage of EU knowledge of an individual with the output of an questionare that is switzerland is a member of EU or not")
+
+ggplot(Lisbon_data2,mapping = aes(oct_vote,fill = Switzerland_Member))+geom_bar()+
+   geom_text(aes(label=..count..),stat="count",position=position_stack(0.5)) + 
+      facet_grid(~EU_Knowledge)+
+         theme(axis.text.x = element_text(angle = 90)) +
+            ggtitle("Distribution of individual who voted or not based on both EU knowledge and Switzerland membership questionare output")
+
+
+ggplot(Lisbon_data2,mapping = aes(oct_type,fill = EU_Knowledge)) + geom_bar() +
+   geom_text(aes(label=..count..),stat="count",position=position_stack(0.5)) +  
+      facet_grid(~Switzerland_Member) +
+         theme(axis.text.x = element_text(angle = 90)) +
+            ggtitle("distribution of voting output based on both EU knowledge and Switzerland membership questionare output")
+
+
+ggplot(Lisbon_data2,mapping = aes(oct_type,fill = EU_Knowledge))+geom_bar()+
+    geom_text(aes(label=round((..count../sum(..count..))*100,2)),
+        stat="count",position=position_stack(0.5)) + facet_grid(~Switzerland_Member)+
+            theme(axis.text.x = element_text(angle = 90)) +
+               ggtitle("distribution of voting output based on both EU knowledge and Switzerland membership questionare output")
+
+
+
+table(Lisbon_data3$EU_Knowledge,Lisbon_data3$Switzerland_Member)
+prop.table(table(Lisbon_data3$EU_Knowledge,Lisbon_data3$Switzerland_Member))
+prop.table(table(Lisbon_data3$EU_Knowledge,Lisbon_data3$Switzerland_Member),2)
+prop.table(table(Lisbon_data3$EU_Knowledge,Lisbon_data3$Switzerland_Member),1)
+
+
+ggplot(Lisbon_data3,mapping = aes(oct_type,fill = EU_Knowledge))+geom_bar() +
+   geom_text(aes(label=..count..),stat="count",position=position_stack(0.5)) +
+       facet_grid(~Switzerland_Member) + theme(axis.text.x = element_text(angle = 90)) + 
+         ggtitle("distribution of voting output based on both EU knowledge and Switzerland membership questionare output")
+
+
+ggplot(Lisbon_data3,mapping = aes(oct_type,fill = EU_Knowledge)) + geom_bar() +
+   geom_text(aes(label=round((..count../sum(..count..))*100,2)),stat="count",
+       position=position_stack(0.5)) + facet_grid(~Switzerland_Member) +
+           theme(axis.text.x = element_text(angle = 90)) + 
+              ggtitle("distribution of voting output based on both EU knowledge and Switzerland membership questionare output")
+
+```
